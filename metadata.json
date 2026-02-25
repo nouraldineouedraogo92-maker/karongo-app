@@ -1,0 +1,5 @@
+{
+  "name": "KARONGO",
+  "description": "Assistant IA offline-first pour les enseignants de CM2 au Burkina Faso. Génération de leçons conformes, exercices et ancrage local.",
+  "requestFramePermissions": []
+}
