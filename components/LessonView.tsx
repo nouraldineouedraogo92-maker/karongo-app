@@ -6,7 +6,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import { Lesson, ChatMessage } from '../types';
 import { Button } from './Button';
-import { Download, Edit3, CheckCircle2, MessageSquareText, X, Loader2, Plus, Trash2, Undo, Save } from 'lucide-react';
+import { Download, Edit3, CheckCircle2, MessageSquareText, X, Loader2, Plus, Trash2, Undo, Save, Printer } from 'lucide-react';
 import { ChatInterface } from './ChatInterface';
 import { modifyLesson } from '../services/geminiService';
 import html2canvas from 'html2canvas';
@@ -79,25 +79,177 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
       }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleDownloadPDF = async () => {
     if (!contentRef.current) return;
     setDownloadState('loading');
+    console.log("Starting PDF generation with persistent watermark...");
 
     try {
-        const input = contentRef.current;
+        // 1. Create a temporary container for clean PDF generation
+        const tempContainer = document.createElement('div');
+        tempContainer.id = 'pdf-temp-container';
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '0';
+        tempContainer.style.width = '800px'; // A4 width approx at 96dpi
+        tempContainer.style.backgroundColor = '#ffffff';
+        tempContainer.style.color = '#000000';
+        tempContainer.style.fontFamily = 'Arial, Helvetica, sans-serif';
+        tempContainer.style.zIndex = '-1';
         
-        // Standard high-quality capture
-        const canvas = await html2canvas(input, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            windowWidth: input.scrollWidth,
-            // Ensure background color is white for PDF even in dark mode
-            backgroundColor: '#ffffff',
-            ignoreElements: (element) => element.classList.contains('no-print')
+        // 2. Create the Watermark Background Layer (Explicit Container)
+        const watermarkLayer = document.createElement('div');
+        watermarkLayer.style.position = 'absolute';
+        watermarkLayer.style.top = '0';
+        watermarkLayer.style.left = '0';
+        watermarkLayer.style.width = '100%';
+        watermarkLayer.style.height = '100%';
+        watermarkLayer.style.zIndex = '0';
+        watermarkLayer.style.pointerEvents = 'none';
+        watermarkLayer.style.opacity = '0.15'; // Subtle but visible
+        
+        // Generate SVG Data URI for the watermark
+        const watermarkSvg = `
+        <svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'>
+          <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' 
+                font-family='Arial, sans-serif' font-weight='bold' font-size='20' fill='#000000' 
+                transform='rotate(-45 150 150)'>
+            KARONGO • USAGE ÉDUCATIF
+          </text>
+        </svg>`;
+        // Use UTF-8 safe encoding for btoa
+        const watermarkUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(watermarkSvg)))}`;
+        
+        watermarkLayer.style.backgroundImage = `url("${watermarkUrl}")`;
+        watermarkLayer.style.backgroundRepeat = 'repeat';
+        
+        tempContainer.appendChild(watermarkLayer);
+
+        // 3. Create Content Layer (Relative to sit on top of watermark)
+        const contentLayer = document.createElement('div');
+        contentLayer.style.position = 'relative';
+        contentLayer.style.zIndex = '1';
+        contentLayer.style.padding = '40px'; // Margins
+        
+        // 4. Add Custom Safe Header
+        const header = document.createElement('div');
+        header.style.borderBottom = '2px solid #000000';
+        header.style.paddingBottom = '10px';
+        header.style.marginBottom = '30px';
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'flex-end';
+        header.innerHTML = `
+            <span style="font-weight: bold; text-transform: uppercase; font-size: 14px; color: #000000;">Karongo • CM2</span>
+            <span style="font-size: 12px; color: #666666;">${new Date(lesson.createdAt).toLocaleDateString()}</span>
+        `;
+        contentLayer.appendChild(header);
+
+        // 5. Extract and Clone Content
+        const articleContent = contentRef.current.querySelector('article');
+        const contentClone = document.createElement('div');
+        contentClone.innerHTML = articleContent ? articleContent.innerHTML : contentRef.current.innerHTML;
+        contentLayer.appendChild(contentClone);
+
+        // 6. Add Custom Safe Footer
+        const footer = document.createElement('div');
+        footer.style.marginTop = '40px';
+        footer.style.paddingTop = '10px';
+        footer.style.borderTop = '1px solid #cccccc';
+        footer.style.textAlign = 'center';
+        footer.style.fontSize = '10px';
+        footer.style.color = '#666666';
+        footer.innerText = 'Généré par KARONGO - Assistant Pédagogique Burkina Faso';
+        contentLayer.appendChild(footer);
+        
+        tempContainer.appendChild(contentLayer);
+
+        // 7. Append to body to allow rendering
+        document.body.appendChild(tempContainer);
+
+        // 8. Radical Style Cleanup & Enforcement
+        const allElements = contentLayer.querySelectorAll('*');
+        allElements.forEach((el) => {
+            if (el instanceof HTMLElement) {
+                el.removeAttribute('class');
+                
+                // Force safe base styles
+                el.style.boxShadow = 'none';
+                el.style.textShadow = 'none';
+                el.style.background = 'transparent'; 
+                
+                const tagName = el.tagName;
+
+                if (tagName === 'H1') {
+                    el.style.color = '#d97706'; 
+                    el.style.fontSize = '24px';
+                    el.style.fontWeight = 'bold';
+                    el.style.marginBottom = '20px';
+                    el.style.borderBottom = '2px solid #f59e0b';
+                    el.style.paddingBottom = '10px';
+                } else if (tagName === 'H2') {
+                    el.style.color = '#d97706';
+                    el.style.fontSize = '20px';
+                    el.style.fontWeight = 'bold';
+                    el.style.marginTop = '25px';
+                    el.style.marginBottom = '15px';
+                } else if (tagName === 'H3') {
+                    el.style.color = '#000000';
+                    el.style.fontSize = '18px';
+                    el.style.fontWeight = 'bold';
+                    el.style.marginTop = '20px';
+                    el.style.marginBottom = '10px';
+                } else if (tagName === 'P' || tagName === 'LI') {
+                    el.style.color = '#000000';
+                    el.style.lineHeight = '1.6';
+                    el.style.marginBottom = '10px';
+                    el.style.fontSize = '14px';
+                } else if (tagName === 'STRONG' || tagName === 'B') {
+                    el.style.fontWeight = 'bold';
+                    el.style.color = '#000000';
+                } else if (tagName === 'TABLE') {
+                    el.style.width = '100%';
+                    el.style.borderCollapse = 'collapse';
+                    el.style.marginBottom = '20px';
+                    el.style.border = '1px solid #e5e7eb';
+                } else if (tagName === 'TH') {
+                    el.style.backgroundColor = '#f3f4f6';
+                    el.style.color = '#000000';
+                    el.style.padding = '8px';
+                    el.style.border = '1px solid #e5e7eb';
+                    el.style.fontWeight = 'bold';
+                    el.style.textAlign = 'left';
+                } else if (tagName === 'TD') {
+                    el.style.color = '#000000';
+                    el.style.padding = '8px';
+                    el.style.border = '1px solid #e5e7eb';
+                } else if (tagName === 'UL') {
+                    el.style.listStyleType = 'disc';
+                    el.style.paddingLeft = '20px';
+                    el.style.marginBottom = '15px';
+                } else if (tagName === 'OL') {
+                    el.style.listStyleType = 'decimal';
+                    el.style.paddingLeft = '20px';
+                    el.style.marginBottom = '15px';
+                }
+            }
         });
 
-        const imgData = canvas.toDataURL('image/png');
+        console.log("Capturing canvas from safe container...");
+        const canvas = await html2canvas(tempContainer, {
+            scale: 2,
+            useCORS: true,
+            logging: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff'
+        });
+
+        console.log("Canvas captured. Generating PDF...");
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -107,29 +259,35 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
         const width = pdfWidth;
         const height = width / ratio;
 
-        // Simple multipage logic
         let heightLeft = height;
         let position = 0;
-        let pageHeight = pdfHeight;
 
-        pdf.addImage(imgData, 'PNG', 0, position, width, height);
-        heightLeft -= pageHeight;
+        pdf.addImage(imgData, 'JPEG', 0, position, width, height);
+        heightLeft -= pdfHeight;
 
         while (heightLeft >= 0) {
             position = heightLeft - height;
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, width, height);
-            heightLeft -= pageHeight;
+            pdf.addImage(imgData, 'JPEG', 0, position, width, height);
+            heightLeft -= pdfHeight;
         }
 
-        pdf.save(`Karongo-${lesson.topic.replace(/\s+/g, '_')}.pdf`);
+        pdf.save(`Karongo-${lesson.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
+        console.log("PDF saved.");
         setDownloadState('success');
+        
+        // Cleanup
+        document.body.removeChild(tempContainer);
         setTimeout(() => setDownloadState('idle'), 2500);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("PDF Generation failed", error);
-        alert("Erreur lors de la création du PDF. Veuillez réessayer.");
+        alert(`Erreur lors de la création du PDF: ${error.message}. Essayez l'option "Imprimer".`);
         setDownloadState('idle');
+        
+        // Cleanup in case of error
+        const temp = document.getElementById('pdf-temp-container');
+        if (temp) document.body.removeChild(temp);
     }
   };
 
@@ -265,6 +423,16 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
               
               <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2 hidden sm:block"></div>
 
+              {/* Print Button - New */}
+              <Button 
+                variant="outline" 
+                onClick={handlePrint} 
+                title="Imprimer la leçon"
+                className="hidden sm:flex"
+              >
+                <Printer size={20} />
+              </Button>
+
               {/* PDF Export Button */}
               <Button 
                 variant="primary" 
@@ -306,14 +474,14 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
 
             <div 
                 ref={contentRef} 
-                className={`relative z-10 p-8 md:p-12 print:p-0 bg-transparent text-gray-900 dark:text-gray-100 ${previewContent ? 'ring-4 ring-amber-100 dark:ring-amber-900/30' : ''}`}
+                className={`relative z-10 p-8 md:p-12 print:p-0 bg-transparent text-gray-900 dark:text-gray-100 pdf-safe-colors lesson-content-capture ${previewContent ? 'ring-4 ring-amber-100 dark:ring-amber-900/30' : ''}`}
             >
                 <div className="border-b-2 border-black dark:border-gray-500 pb-4 mb-8 flex justify-between items-end opacity-50 dark:opacity-70 print:opacity-100">
                     <span className="font-bold text-sm tracking-widest uppercase dark:text-gray-300">Karongo • CM2</span>
                     <span className="text-xs dark:text-gray-400">{new Date(lesson.createdAt).toLocaleDateString()}</span>
                 </div>
 
-                <article className="prose prose-lg prose-slate dark:prose-invert max-w-none prose-p:leading-relaxed prose-li:my-1 print:prose-black bg-transparent">
+                <article className="prose prose-lg prose-gray dark:prose-invert max-w-none prose-p:leading-relaxed prose-li:my-1 print:prose-black bg-transparent">
                     <ReactMarkdown 
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex, rehypeRaw]}

@@ -2,6 +2,14 @@ export enum Subject {
   ARITHMETIC = "Arithmétique",
   GEOMETRY = "Géométrie",
   PROBLEM_SOLVING = "Résolution de problèmes",
+  METRIC_SYSTEM = "Système métrique",
+  CONJUGATION = "Conjugaison",
+  GRAMMAR = "Grammaire",
+  VOCABULARY_USUEL = "Vocabulaire usuel",
+  VOCABULARY_THEORIQUE = "Vocabulaire théorique",
+  ORTHOGRAPHY = "Orthographe",
+  HISTORY = "Histoire",
+  GEOGRAPHY = "Géographie",
   SVT = "Sciences de la Vie et de la Terre"
 }
 
@@ -39,3 +47,23 @@ export interface LoadingState {
   isLoading: boolean;
   message?: string;
 }
+
+export interface FeedbackEntry {
+  id: string;
+  type: FeedbackType;
+  rating?: 'BAD' | 'AVERAGE' | 'GOOD'; // For quick feedback
+  comment?: string;
+  screenshotUrl?: string;
+  timestamp: number;
+}
+
+export interface UserProfile {
+  dailyUsageCount: number;
+  lastResetDate: string;
+  feedbackPoints: number;
+  bonusUnlocked: boolean;
+  quickFeedbackCount: number;
+  feedbacks: FeedbackEntry[]; // Store feedbacks
+}
+
+export type FeedbackType = 'QUICK' | 'DETAILED' | 'BUG_REPORT';

@@ -1,6 +1,7 @@
-import React from 'react';
-import { BookOpen, PlusCircle, Trash2, History, Menu, X, Moon, Sun, Sparkles, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, PlusCircle, Trash2, History, Menu, X, Moon, Sun, Sparkles, Zap, ChevronDown, ChevronRight } from 'lucide-react';
 import { Lesson } from '../types';
+import { SUBJECT_GROUPS } from '../constants';
 
 interface SidebarProps {
   lessons: Lesson[];
@@ -13,7 +14,9 @@ interface SidebarProps {
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   onOpenPremium: () => void;
-  remainingTokens: number; // Nouvelle prop
+  onOpenFeedback: () => void;
+  remainingTokens: number;
+  totalTokens: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -27,14 +30,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isDarkMode,
   toggleDarkMode,
   onOpenPremium,
-  remainingTokens
+  onOpenFeedback,
+  remainingTokens,
+  totalTokens
 }) => {
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    "Mathématiques": true,
+    "Français": true,
+    "Sciences humaines": true,
+    "Observations": true,
+    "Autres": true
+  });
+
+  const toggleGroup = (groupName: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }));
+  };
+  
+  const renderLessonItem = (lesson: Lesson) => (
+    <li key={lesson.id}>
+      <button
+        onClick={() => {
+          onSelectLesson(lesson);
+          if (window.innerWidth < 1024) setIsOpen(false);
+        }}
+        className={`
+          w-full text-left p-3 rounded-md text-sm transition-all relative group
+          ${currentLessonId === lesson.id 
+            ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-400 font-medium ring-1 ring-amber-200 dark:ring-amber-800' 
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
+        `}
+      >
+        <div className="pr-6 truncate">{lesson.topic}</div>
+        <div className="flex items-center justify-between mt-1">
+          <div className="text-xs text-gray-400">{lesson.subject}</div>
+          {lesson.difficulty && (
+            <div className="text-[10px] uppercase text-gray-400 font-semibold">{lesson.difficulty}</div>
+          )}
+        </div>
+        
+        <div 
+          onClick={(e) => onDeleteLesson(lesson.id, e)}
+          className="absolute right-2 top-3 p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Supprimer"
+        >
+          <Trash2 size={14} />
+        </div>
+      </button>
+    </li>
+  );
+
   return (
     <>
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -81,22 +134,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     Crédits du jour
                 </span>
                 <span className={`text-xs font-bold ${remainingTokens === 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-                    {remainingTokens}/5
+                    {remainingTokens}/{totalTokens}
                 </span>
             </div>
-            <div className="flex space-x-1.5">
-                {[...Array(5)].map((_, i) => (
-                    <div
-                        key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                            i < remainingTokens
-                                ? 'bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)]'
-                                : 'bg-gray-200 dark:bg-gray-700'
-                        }`}
-                    />
-                ))}
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+              <div 
+                className="bg-amber-500 h-2.5 rounded-full transition-all duration-500" 
+                style={{ width: `${(remainingTokens / totalTokens) * 100}%` }}
+              ></div>
             </div>
           </div>
+
+          {totalTokens === 3 && (
+              <button 
+                onClick={onOpenFeedback}
+                className="w-full flex items-center justify-center space-x-2 p-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-500 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors mb-2"
+              >
+                <Sparkles size={14} />
+                <span>Gagner +2 leçons</span>
+              </button>
+          )}
 
           <button 
             onClick={() => {
@@ -126,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="flex-1 overflow-y-auto px-4 pb-4 custom-scrollbar">
           <div className="flex items-center space-x-2 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
             <History size={14} />
             <span>Historique</span>
@@ -135,40 +192,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {lessons.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-8 italic">Aucune leçon sauvegardée.</p>
           ) : (
-            <ul className="space-y-2">
-              {lessons.map((lesson) => (
-                <li key={lesson.id}>
-                  <button
-                    onClick={() => {
-                      onSelectLesson(lesson);
-                      if (window.innerWidth < 1024) setIsOpen(false);
-                    }}
-                    className={`
-                      w-full text-left p-3 rounded-md text-sm transition-all relative group
-                      ${currentLessonId === lesson.id 
-                        ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-400 font-medium ring-1 ring-amber-200 dark:ring-amber-800' 
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
-                    `}
-                  >
-                    <div className="pr-6 truncate">{lesson.topic}</div>
-                    <div className="flex items-center justify-between mt-1">
-                      <div className="text-xs text-gray-400">{lesson.subject}</div>
-                      {lesson.difficulty && (
-                        <div className="text-[10px] uppercase text-gray-400 font-semibold">{lesson.difficulty}</div>
-                      )}
-                    </div>
-                    
-                    <div 
-                      onClick={(e) => onDeleteLesson(lesson.id, e)}
-                      className="absolute right-2 top-3 p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Supprimer"
+            <div className="space-y-2">
+              {Object.entries(SUBJECT_GROUPS).map(([groupName, groupSubjects]) => {
+                const groupLessons = lessons.filter(l => groupSubjects.includes(l.subject));
+                if (groupLessons.length === 0) return null;
+                
+                const isExpanded = expandedGroups[groupName];
+
+                return (
+                  <div key={groupName} className="border-b border-gray-100 dark:border-gray-800 last:border-0 pb-2">
+                    <button 
+                        onClick={() => toggleGroup(groupName)}
+                        className="w-full flex items-center justify-between py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-amber-600 dark:hover:text-amber-500 transition-colors"
                     >
-                      <Trash2 size={14} />
+                        <span>{groupName}</span>
+                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                    
+                    {isExpanded && (
+                        <ul className="space-y-1 mt-1 animate-in slide-in-from-top-2 duration-200">
+                        {groupLessons.map(renderLessonItem)}
+                        </ul>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {/* Fallback for lessons with subjects not in groups */}
+              {(() => {
+                 const allGroupSubjects = Object.values(SUBJECT_GROUPS).flat();
+                 const otherLessons = lessons.filter(l => !allGroupSubjects.includes(l.subject));
+                 if (otherLessons.length === 0) return null;
+                 
+                 const isExpanded = expandedGroups["Autres"];
+                 
+                 return (
+                    <div className="border-b border-gray-100 dark:border-gray-800 last:border-0 pb-2">
+                        <button 
+                            onClick={() => toggleGroup("Autres")}
+                            className="w-full flex items-center justify-between py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-amber-600 dark:hover:text-amber-500 transition-colors"
+                        >
+                            <span>Autres</span>
+                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        </button>
+                        
+                        {isExpanded && (
+                            <ul className="space-y-1 mt-1 animate-in slide-in-from-top-2 duration-200">
+                            {otherLessons.map(renderLessonItem)}
+                            </ul>
+                        )}
                     </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
+                 )
+              })()}
+            </div>
           )}
         </div>
         

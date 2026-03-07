@@ -4,9 +4,11 @@ import { X, Trophy, Clock } from 'lucide-react';
 interface LimitReachedModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenFeedback?: () => void;
+  isBonusUnlocked?: boolean;
 }
 
-export const LimitReachedModal: React.FC<LimitReachedModalProps> = ({ isOpen, onClose }) => {
+export const LimitReachedModal: React.FC<LimitReachedModalProps> = ({ isOpen, onClose, onOpenFeedback, isBonusUnlocked }) => {
   if (!isOpen) return null;
 
   return (
@@ -30,12 +32,26 @@ export const LimitReachedModal: React.FC<LimitReachedModalProps> = ({ isOpen, on
           </h2>
 
           <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
-            Vous avez utilisé vos 5 jetons quotidiens. Karongo doit maintenant recharger ses batteries pour économiser les ressources du projet.
+            Vous avez atteint votre quota quotidien de générations. Karongo doit maintenant recharger ses batteries.
           </p>
+
+          {!isBonusUnlocked && onOpenFeedback && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-300 mb-3 font-medium">
+                      Besoin de plus de leçons ? Aidez-nous à nous améliorer et gagnez un bonus !
+                  </p>
+                  <button 
+                    onClick={onOpenFeedback}
+                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors text-sm"
+                  >
+                    Gagner +2 leçons maintenant
+                  </button>
+              </div>
+          )}
 
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-center justify-center text-amber-800 dark:text-amber-400 font-medium">
             <Clock size={18} className="mr-2" />
-            <span>Revenez demain matin pour 5 nouvelles leçons !</span>
+            <span>Revenez demain pour de nouvelles leçons !</span>
           </div>
 
           <button 

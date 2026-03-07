@@ -6,21 +6,15 @@ import { LessonGenerator } from './components/LessonGenerator';
 import { LessonView } from './components/LessonView';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { LimitReachedModal } from './components/LimitReachedModal'; 
+import { FeedbackModal } from './components/FeedbackModal';
 import { OnboardingModal } from './components/OnboardingModal'; // Import Onboarding
-import { LandingPage } from './components/LandingPage';
 import { Menu, Ticket } from 'lucide-react';
+import { checkAccess, incrementUsage, getProfile } from './services/usageService';
 
 const STORAGE_KEY = 'karongo_lessons';
 const THEME_KEY = 'karongo_theme';
-const AUTH_KEY = 'karongo_auth_session';
-const USAGE_KEY = 'karongo_daily_usage';
-
-const MAX_DAILY_GENERATIONS = 5;
 
 const App: React.FC = () => {
-  // Auth State
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
   // App States
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
@@ -31,58 +25,19 @@ const App: React.FC = () => {
   // Modal States
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
-  // Token / Usage State
-  const [tokensUsed, setTokensUsed] = useState(0);
-  const [showTokenToast, setShowTokenToast] = useState(false);
+  // Usage State
+  const [access, setAccess] = useState(checkAccess());
 
-  // Calcul dynamique des jetons restants
-  const remainingTokens = Math.max(0, MAX_DAILY_GENERATIONS - tokensUsed);
-
-  // Check Authentication on Mount
+  // Listen for usage updates
   useEffect(() => {
-    const sessionAuth = sessionStorage.getItem(AUTH_KEY);
-    if (sessionAuth === 'true') {
-      setIsAuthenticated(true);
-    }
+    const updateUsage = () => {
+        setAccess(checkAccess());
+    };
+    window.addEventListener('profile-updated', updateUsage);
+    return () => window.removeEventListener('profile-updated', updateUsage);
   }, []);
-
-  const handleLoginSuccess = () => {
-    sessionStorage.setItem(AUTH_KEY, 'true');
-    setIsAuthenticated(true);
-  };
-
-  // Manage Daily Limits & Toast
-  useEffect(() => {
-    if (isAuthenticated) {
-        const today = new Date().toDateString(); // Format "Fri Feb 14 2025" - unique par jour
-        const usageData = localStorage.getItem(USAGE_KEY);
-        
-        let currentUsage = 0;
-
-        if (usageData) {
-            const parsed = JSON.parse(usageData);
-            if (parsed.date === today) {
-                currentUsage = parsed.count;
-            } else {
-                // Nouveau jour, reset
-                localStorage.setItem(USAGE_KEY, JSON.stringify({ date: today, count: 0 }));
-            }
-        } else {
-            // Première utilisation
-            localStorage.setItem(USAGE_KEY, JSON.stringify({ date: today, count: 0 }));
-        }
-
-        setTokensUsed(currentUsage);
-
-        // Afficher le toast d'information uniquement si on a des jetons et qu'on vient d'arriver
-        if (currentUsage < MAX_DAILY_GENERATIONS) {
-             setShowTokenToast(true);
-             const timer = setTimeout(() => setShowTokenToast(false), 5000);
-             return () => clearTimeout(timer);
-        }
-    }
-  }, [isAuthenticated]);
 
   // Load lessons & Theme
   useEffect(() => {
@@ -133,7 +88,7 @@ const App: React.FC = () => {
 
   const executeGeneration = async (req: GenerationRequest) => {
     // VÉRIFICATION DE LA LIMITE
-    if (tokensUsed >= MAX_DAILY_GENERATIONS) {
+    if (!access.allowed) {
         setIsLimitModalOpen(true);
         return;
     }
@@ -185,10 +140,7 @@ const App: React.FC = () => {
       setCurrentLessonId(newLesson.id);
 
       // INCREMENTER LE COMPTEUR SUR SUCCÈS
-      const newCount = tokensUsed + 1;
-      setTokensUsed(newCount);
-      const today = new Date().toDateString();
-      localStorage.setItem(USAGE_KEY, JSON.stringify({ date: today, count: newCount }));
+      incrementUsage();
 
     } catch (error: any) {
       alert(error.message || "Une erreur est survenue");
@@ -215,11 +167,6 @@ const App: React.FC = () => {
     }
   };
 
-  // IF NOT AUTHENTICATED, SHOW LANDING PAGE
-  if (!isAuthenticated) {
-    return <LandingPage onLoginSuccess={handleLoginSuccess} />;
-  }
-
   // ELSE SHOW APP
   const currentLesson = lessons.find(l => l.id === currentLessonId);
 
@@ -236,7 +183,9 @@ const App: React.FC = () => {
         isDarkMode={isDarkMode}
         toggleDarkMode={toggleDarkMode}
         onOpenPremium={() => setIsSubscriptionOpen(true)}
-        remainingTokens={remainingTokens}
+        onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+        remainingTokens={access.remaining}
+        totalTokens={access.total}
       />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
@@ -252,29 +201,13 @@ const App: React.FC = () => {
           <div className="flex items-center space-x-2">
              <div className="flex items-center bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-full border border-amber-100 dark:border-amber-800">
                 <Ticket size={14} className="text-amber-600 dark:text-amber-500 mr-1.5" />
-                <span className={`text-xs font-bold ${remainingTokens === 0 ? 'text-red-500' : 'text-amber-800 dark:text-amber-400'}`}>
-                    {remainingTokens}
+                <span className={`text-xs font-bold ${access.remaining === 0 ? 'text-red-500' : 'text-amber-800 dark:text-amber-400'}`}>
+                    {access.remaining}
                 </span>
              </div>
           </div>
         </div>
         
-        {/* TOKEN USAGE TOAST (Initial Notification) */}
-        {showTokenToast && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-500 w-[90%] max-w-sm pointer-events-none">
-                <div className="bg-white dark:bg-gray-800 border-l-4 border-amber-500 shadow-xl rounded-r-lg p-4 flex items-center pointer-events-auto">
-                    <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full mr-3 text-amber-600 dark:text-amber-400">
-                        <Ticket size={20} />
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Il vous reste <span className="font-bold text-amber-600 dark:text-amber-400">{remainingTokens}</span> jetons aujourd'hui.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        )}
-
         <main className="flex-1 overflow-hidden bg-gray-50/50 dark:bg-gray-900/50 relative">
           {currentLesson ? (
             <LessonView 
@@ -305,6 +238,22 @@ const App: React.FC = () => {
       <LimitReachedModal 
         isOpen={isLimitModalOpen}
         onClose={() => setIsLimitModalOpen(false)}
+        onOpenFeedback={() => {
+            setIsLimitModalOpen(false);
+            setIsFeedbackModalOpen(true);
+        }}
+        isBonusUnlocked={access.total > 3}
+      />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        onUnlock={() => {
+            // Refresh access state is handled by event listener
+            // Just close modal or show success
+            // FeedbackModal handles its own success message then calls onClose
+        }}
       />
     </div>
   );
