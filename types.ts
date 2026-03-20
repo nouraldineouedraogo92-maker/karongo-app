@@ -58,6 +58,14 @@ export interface FeedbackEntry {
 }
 
 export interface UserProfile {
+  id?: string;
+  full_name?: string;
+  school_name?: string;
+  grade_level?: string;
+  points_balance: number;
+  daily_lessons_count: number;
+  last_active_date: string;
+  // Legacy fields for backward compatibility or local state
   dailyUsageCount: number;
   lastResetDate: string;
   feedbackPoints: number;

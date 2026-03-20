@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from './services/supabase';
 import { generateLesson } from './services/geminiService';
 import { Lesson, GenerationRequest, LoadingState, Subject } from './types';
 import { Sidebar } from './components/Sidebar';
@@ -7,14 +8,21 @@ import { LessonView } from './components/LessonView';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { LimitReachedModal } from './components/LimitReachedModal'; 
 import { FeedbackModal } from './components/FeedbackModal';
-import { OnboardingModal } from './components/OnboardingModal'; // Import Onboarding
-import { Menu, Ticket } from 'lucide-react';
-import { checkAccess, incrementUsage, getProfile } from './services/usageService';
+import { OnboardingModal } from './components/OnboardingModal';
+import { LandingPage } from './components/Auth/LandingPage';
+import { ProfileModal } from './components/Auth/ProfileModal';
+import { Menu, Ticket, LogOut } from 'lucide-react';
+import { checkAccess, incrementUsage, getProfile, syncProfileWithSupabase } from './services/usageService';
 
 const STORAGE_KEY = 'karongo_lessons';
 const THEME_KEY = 'karongo_theme';
 
 const App: React.FC = () => {
+  // Auth States
+  const [session, setSession] = useState<any>(null);
+  const [isProfileComplete, setIsProfileComplete] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+
   // App States
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
@@ -38,6 +46,51 @@ const App: React.FC = () => {
     window.addEventListener('profile-updated', updateUsage);
     return () => window.removeEventListener('profile-updated', updateUsage);
   }, []);
+
+  // Auth & Profile Check
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) checkProfileCompletion(session.user.id);
+      else setAuthLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) checkProfileCompletion(session.user.id);
+      else setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkProfileCompletion = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error || !data || !data.full_name) {
+        setIsProfileComplete(false);
+      } else {
+        setIsProfileComplete(true);
+        // Sync remote profile to local storage for synchronous access
+        syncProfileWithSupabase(data);
+      }
+    } catch (err) {
+      console.error("Error checking profile:", err);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   // Load lessons & Theme
   useEffect(() => {
@@ -167,11 +220,29 @@ const App: React.FC = () => {
     }
   };
 
-  // ELSE SHOW APP
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LandingPage onLoginSuccess={() => {}} />;
+  }
+
   const currentLesson = lessons.find(l => l.id === currentLessonId);
+  const profile = getProfile();
 
   return (
     <div className={`flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors`}>
+      <ProfileModal 
+        isOpen={!isProfileComplete} 
+        userId={session.user.id} 
+        onComplete={() => checkProfileCompletion(session.user.id)} 
+      />
+      
       <Sidebar 
         lessons={lessons} 
         currentLessonId={currentLessonId}
@@ -189,13 +260,39 @@ const App: React.FC = () => {
       />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+        {/* Desktop Header / Status Bar */}
+        <div className="hidden lg:flex bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 items-center justify-between shadow-sm z-10">
+          <div className="flex items-center space-x-4">
+            <span className="font-bold text-amber-700 dark:text-amber-500 text-xl">KARONGO</span>
+            {profile.full_name && (
+              <span className="text-gray-600 dark:text-gray-300 font-medium">
+                Bonjour {profile.full_name} | {access.remaining}/{access.total} leçons
+              </span>
+            )}
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <LogOut size={16} className="mr-2" />
+            Déconnexion
+          </button>
+        </div>
+
         {/* Mobile Header */}
         <div className="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between shadow-sm z-10">
           <button onClick={() => setSidebarOpen(true)} className="text-gray-700 dark:text-gray-300">
             <Menu size={24} />
           </button>
           
-          <span className="font-bold text-amber-700 dark:text-amber-500">KARONGO</span>
+          <div className="flex flex-col items-center">
+            <span className="font-bold text-amber-700 dark:text-amber-500">KARONGO</span>
+            {profile.full_name && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {access.remaining}/{access.total} leçons
+              </span>
+            )}
+          </div>
           
           {/* Mobile Token Counter */}
           <div className="flex items-center space-x-2">
@@ -251,8 +348,6 @@ const App: React.FC = () => {
         onClose={() => setIsFeedbackModalOpen(false)}
         onUnlock={() => {
             // Refresh access state is handled by event listener
-            // Just close modal or show success
-            // FeedbackModal handles its own success message then calls onClose
         }}
       />
     </div>

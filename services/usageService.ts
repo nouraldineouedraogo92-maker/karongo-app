@@ -1,4 +1,5 @@
 import { UserProfile, FeedbackType, FeedbackEntry } from '../types';
+import { supabase } from './supabase';
 
 const STORAGE_KEY = 'karongo_user_profile';
 const DAILY_LIMIT_BASE = 3;
@@ -11,7 +12,60 @@ const DEFAULT_PROFILE: UserProfile = {
   feedbackPoints: 0,
   bonusUnlocked: false,
   quickFeedbackCount: 0,
-  feedbacks: []
+  feedbacks: [],
+  points_balance: 0,
+  daily_lessons_count: 0,
+  last_active_date: new Date().toISOString().split('T')[0],
+};
+
+export const syncProfileWithSupabase = (remoteProfile: any) => {
+  const localProfile = getProfile();
+  
+  // Check if day reset is needed for remote profile
+  const today = new Date().toISOString().split('T')[0];
+  let dailyCount = remoteProfile.daily_lessons_count || 0;
+  
+  if (remoteProfile.last_active_date !== today) {
+    dailyCount = 0;
+  }
+
+  const mergedProfile: UserProfile = {
+    ...localProfile,
+    id: remoteProfile.id,
+    full_name: remoteProfile.full_name,
+    school_name: remoteProfile.school_name,
+    grade_level: remoteProfile.grade_level,
+    points_balance: remoteProfile.points_balance || 0,
+    daily_lessons_count: dailyCount,
+    last_active_date: today,
+    
+    // Map remote to local legacy fields to keep UI working without major refactor
+    dailyUsageCount: dailyCount,
+    feedbackPoints: remoteProfile.points_balance || 0,
+    lastResetDate: today,
+  };
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedProfile));
+  window.dispatchEvent(new Event('profile-updated'));
+  
+  // If we reset the day, update remote
+  if (remoteProfile.last_active_date !== today) {
+    updateRemoteProfile(mergedProfile);
+  }
+};
+
+const updateRemoteProfile = async (profile: UserProfile) => {
+  if (!profile.id) return;
+  
+  try {
+    await supabase.from('profiles').update({
+      points_balance: profile.feedbackPoints,
+      daily_lessons_count: profile.dailyUsageCount,
+      last_active_date: profile.lastResetDate,
+    }).eq('id', profile.id);
+  } catch (err) {
+    console.error("Failed to update remote profile", err);
+  }
 };
 
 export const getProfile = (): UserProfile => {
@@ -37,7 +91,9 @@ export const getProfile = (): UserProfile => {
     const newProfile = {
       ...profile,
       dailyUsageCount: 0,
+      daily_lessons_count: 0,
       lastResetDate: today,
+      last_active_date: today,
       bonusUnlocked: false, // Reset bonus daily
       quickFeedbackCount: 0 // Reset quick feedback count
     };
@@ -50,8 +106,10 @@ export const getProfile = (): UserProfile => {
 
 const saveProfile = (profile: UserProfile) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-  // Dispatch event for UI updates so components can re-render
   window.dispatchEvent(new Event('profile-updated'));
+  
+  // Sync to Supabase in background
+  updateRemoteProfile(profile);
 };
 
 export const checkAccess = (): { allowed: boolean; remaining: number; total: number } => {
@@ -69,6 +127,7 @@ export const checkAccess = (): { allowed: boolean; remaining: number; total: num
 export const incrementUsage = () => {
   const profile = getProfile();
   profile.dailyUsageCount += 1;
+  profile.daily_lessons_count += 1;
   saveProfile(profile);
 };
 
@@ -118,6 +177,7 @@ export const addFeedbackPoints = (
 
   // Add Points
   profile.feedbackPoints += points;
+  profile.points_balance += points;
   let unlocked = false;
   
   // Check if we should unlock bonus
@@ -128,6 +188,7 @@ export const addFeedbackPoints = (
         unlocked = true;
     }
     profile.feedbackPoints = 0; // Reset points after reaching threshold
+    profile.points_balance = 0;
   }
   
   saveProfile(profile);
