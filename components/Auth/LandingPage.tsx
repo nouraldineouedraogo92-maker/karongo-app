@@ -16,11 +16,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
 
   const handleGoogleLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
-        }
+          // Force la redirection vers ton site réel
+          redirectTo: 'https://karongo-app.vercel.app', 
+          // Sur mobile, c'est parfois mieux de ne pas utiliser de popup
+          skipBrowserRedirect: false, 
+        },
       });
       if (error) throw error;
     } catch (err: any) {
