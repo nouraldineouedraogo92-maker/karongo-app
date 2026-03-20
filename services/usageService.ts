@@ -3,8 +3,6 @@ import { supabase } from './supabase';
 
 const STORAGE_KEY = 'karongo_user_profile';
 const DAILY_LIMIT_BASE = 3;
-const BONUS_AMOUNT = 2;
-const POINTS_TO_UNLOCK = 5;
 
 const DEFAULT_PROFILE: UserProfile = {
   dailyUsageCount: 0,
@@ -21,7 +19,6 @@ const DEFAULT_PROFILE: UserProfile = {
 export const syncProfileWithSupabase = (remoteProfile: any) => {
   const localProfile = getProfile();
   
-  // Check if day reset is needed for remote profile
   const today = new Date().toISOString().split('T')[0];
   let dailyCount = remoteProfile.daily_lessons_count || 0;
   
@@ -39,7 +36,7 @@ export const syncProfileWithSupabase = (remoteProfile: any) => {
     daily_lessons_count: dailyCount,
     last_active_date: today,
     
-    // Map remote to local legacy fields to keep UI working without major refactor
+    // Legacy fields mapping
     dailyUsageCount: dailyCount,
     feedbackPoints: remoteProfile.points_balance || 0,
     lastResetDate: today,
@@ -47,104 +44,62 @@ export const syncProfileWithSupabase = (remoteProfile: any) => {
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedProfile));
   window.dispatchEvent(new Event('profile-updated'));
-  
-  // If we reset the day, update remote
-  if (remoteProfile.last_active_date !== today) {
-    updateRemoteProfile(mergedProfile);
-  }
-};
-
-const updateRemoteProfile = async (profile: UserProfile) => {
-  if (!profile.id) return;
-  
-  try {
-    await supabase.from('profiles').update({
-      points_balance: profile.feedbackPoints,
-      daily_lessons_count: profile.dailyUsageCount,
-      last_active_date: profile.lastResetDate,
-    }).eq('id', profile.id);
-  } catch (err) {
-    console.error("Failed to update remote profile", err);
-  }
 };
 
 export const getProfile = (): UserProfile => {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (!stored) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PROFILE));
     return DEFAULT_PROFILE;
   }
   
   const profile = JSON.parse(stored);
   
-  // Migration for existing profiles
-  if (profile.quickFeedbackCount === undefined) {
-      profile.quickFeedbackCount = 0;
-  }
-  if (!profile.feedbacks) {
-      profile.feedbacks = [];
-  }
-
-  // Check for day reset
+  // Check for day reset locally just in case
   const today = new Date().toISOString().split('T')[0];
-  if (profile.lastResetDate !== today) {
+  if (profile.last_active_date !== today) {
     const newProfile = {
       ...profile,
-      dailyUsageCount: 0,
       daily_lessons_count: 0,
-      lastResetDate: today,
+      dailyUsageCount: 0,
       last_active_date: today,
-      bonusUnlocked: false, // Reset bonus daily
-      quickFeedbackCount: 0 // Reset quick feedback count
+      lastResetDate: today,
+      quickFeedbackCount: 0
     };
-    saveProfile(newProfile);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newProfile));
     return newProfile;
   }
   
   return profile;
 };
 
-const saveProfile = (profile: UserProfile) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-  window.dispatchEvent(new Event('profile-updated'));
-  
-  // Sync to Supabase in background
-  updateRemoteProfile(profile);
-};
-
 export const checkAccess = (): { allowed: boolean; remaining: number; total: number } => {
   const profile = getProfile();
-  const limit = DAILY_LIMIT_BASE + (profile.bonusUnlocked ? BONUS_AMOUNT : 0);
-  const remaining = Math.max(0, limit - profile.dailyUsageCount);
+  const limit = DAILY_LIMIT_BASE;
+  const remainingFree = Math.max(0, limit - profile.daily_lessons_count);
+  
+  // Allowed if they have free lessons OR if they have points balance
+  const allowed = remainingFree > 0 || profile.points_balance > 0;
   
   return {
-    allowed: remaining > 0,
-    remaining,
+    allowed,
+    remaining: remainingFree,
     total: limit
   };
-};
-
-export const incrementUsage = () => {
-  const profile = getProfile();
-  profile.dailyUsageCount += 1;
-  profile.daily_lessons_count += 1;
-  saveProfile(profile);
 };
 
 // Simulate Email Notification
 const triggerEmailNotification = (feedback: FeedbackEntry) => {
     console.log("📧 [EMAIL SERVICE] Sending feedback notification:", feedback);
-    // TODO: Brancher EmailJS ici une fois le service rétabli
 };
 
-export const addFeedbackPoints = (
+export const addFeedbackPoints = async (
     type: FeedbackType, 
     details?: { 
         rating?: 'BAD' | 'AVERAGE' | 'GOOD'; 
         comment?: string; 
         screenshot?: File 
     }
-): { unlocked: boolean; limitReached?: boolean } => {
+): Promise<{ unlocked: boolean; limitReached?: boolean }> => {
   const profile = getProfile();
   let points = 0;
   
@@ -161,36 +116,36 @@ export const addFeedbackPoints = (
       }
   }
   
-  // Create Feedback Entry
   const newFeedback: FeedbackEntry = {
       id: crypto.randomUUID(),
       type,
       rating: details?.rating,
       comment: details?.comment,
-      screenshotUrl: details?.screenshot ? URL.createObjectURL(details.screenshot) : undefined, // Simulate URL
+      screenshotUrl: details?.screenshot ? URL.createObjectURL(details.screenshot) : undefined,
       timestamp: Date.now()
   };
 
-  // Save Feedback
+  profile.feedbacks = profile.feedbacks || [];
   profile.feedbacks.push(newFeedback);
   triggerEmailNotification(newFeedback);
 
   // Add Points
-  profile.feedbackPoints += points;
   profile.points_balance += points;
-  let unlocked = false;
+  profile.feedbackPoints = profile.points_balance;
   
-  // Check if we should unlock bonus
-  // Only unlock if not already unlocked for the day
-  if (profile.feedbackPoints >= POINTS_TO_UNLOCK) {
-    if (!profile.bonusUnlocked) {
-        profile.bonusUnlocked = true;
-        unlocked = true;
-    }
-    profile.feedbackPoints = 0; // Reset points after reaching threshold
-    profile.points_balance = 0;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  window.dispatchEvent(new Event('profile-updated'));
+
+  // Sync to Supabase
+  if (profile.id) {
+      try {
+          await supabase.from('profiles').update({
+              points_balance: profile.points_balance
+          }).eq('id', profile.id);
+      } catch (err) {
+          console.error("Failed to sync points to Supabase", err);
+      }
   }
   
-  saveProfile(profile);
-  return { unlocked };
+  return { unlocked: false };
 };

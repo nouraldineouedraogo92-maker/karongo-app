@@ -12,7 +12,7 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { LandingPage } from './components/Auth/LandingPage';
 import { ProfileModal } from './components/Auth/ProfileModal';
 import { Menu, Ticket, LogOut } from 'lucide-react';
-import { checkAccess, incrementUsage, getProfile, syncProfileWithSupabase } from './services/usageService';
+import { checkAccess, getProfile, syncProfileWithSupabase } from './services/usageService';
 
 const STORAGE_KEY = 'karongo_lessons';
 const THEME_KEY = 'karongo_theme';
@@ -51,7 +51,7 @@ const App: React.FC = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) checkProfileCompletion(session.user.id);
+      if (session) checkProfileCompletion(session);
       else setAuthLoading(false);
     });
 
@@ -59,27 +59,50 @@ const App: React.FC = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) checkProfileCompletion(session.user.id);
+      if (session) checkProfileCompletion(session);
       else setAuthLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkProfileCompletion = async (userId: string) => {
+  const checkProfileCompletion = async (currentSession: any) => {
     try {
+      const userId = currentSession.user.id;
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error || !data || !data.full_name) {
-        setIsProfileComplete(false);
-      } else {
-        setIsProfileComplete(true);
-        // Sync remote profile to local storage for synchronous access
+      if (error && error.code === 'PGRST116') {
+        // Profile doesn't exist, create it automatically
+        const newProfile = {
+          id: userId,
+          full_name: currentSession.user.user_metadata?.full_name || '',
+          grade_level: 'CM2',
+          points_balance: 0,
+          daily_lessons_count: 0,
+          last_active_date: new Date().toISOString().split('T')[0]
+        };
+        
+        await supabase.from('profiles').insert([newProfile]);
+        syncProfileWithSupabase(newProfile);
+        setIsProfileComplete(!!newProfile.full_name);
+      } else if (data) {
+        // Check for daily reset
+        const today = new Date().toISOString().split('T')[0];
+        if (data.last_active_date !== today) {
+            data.daily_lessons_count = 0;
+            data.last_active_date = today;
+            await supabase.from('profiles').update({
+                daily_lessons_count: 0,
+                last_active_date: today
+            }).eq('id', userId);
+        }
+
         syncProfileWithSupabase(data);
+        setIsProfileComplete(!!data.full_name);
       }
     } catch (err) {
       console.error("Error checking profile:", err);
@@ -140,8 +163,12 @@ const App: React.FC = () => {
   };
 
   const executeGeneration = async (req: GenerationRequest) => {
+    const profile = getProfile();
+    const isQuotaReached = profile.daily_lessons_count >= 3;
+    const hasPoints = profile.points_balance > 0;
+
     // VÉRIFICATION DE LA LIMITE
-    if (!access.allowed) {
+    if (isQuotaReached && !hasPoints) {
         setIsLimitModalOpen(true);
         return;
     }
@@ -193,7 +220,27 @@ const App: React.FC = () => {
       setCurrentLessonId(newLesson.id);
 
       // INCREMENTER LE COMPTEUR SUR SUCCÈS
-      incrementUsage();
+      const newCount = profile.daily_lessons_count + 1;
+      let newPoints = profile.points_balance;
+
+      if (isQuotaReached && hasPoints) {
+          newPoints -= 1; // Deduct a point for the extra lesson
+      }
+
+      const updatedProfile = {
+          ...profile,
+          daily_lessons_count: newCount,
+          points_balance: newPoints
+      };
+      
+      if (profile.id) {
+          await supabase.from('profiles').update({
+              daily_lessons_count: newCount,
+              points_balance: newPoints
+          }).eq('id', profile.id);
+      }
+
+      syncProfileWithSupabase(updatedProfile);
 
     } catch (error: any) {
       alert(error.message || "Une erreur est survenue");
@@ -240,7 +287,7 @@ const App: React.FC = () => {
       <ProfileModal 
         isOpen={!isProfileComplete} 
         userId={session.user.id} 
-        onComplete={() => checkProfileCompletion(session.user.id)} 
+        onComplete={() => checkProfileCompletion(session)} 
       />
       
       <Sidebar 
@@ -266,7 +313,7 @@ const App: React.FC = () => {
             <span className="font-bold text-amber-700 dark:text-amber-500 text-xl">KARONGO</span>
             {profile.full_name && (
               <span className="text-gray-600 dark:text-gray-300 font-medium">
-                Bonjour {profile.full_name} | {access.remaining}/{access.total} leçons
+                Bonjour {profile.full_name} | Quota: {access.remaining}/{access.total} | Points: {profile.points_balance}
               </span>
             )}
           </div>
@@ -289,7 +336,7 @@ const App: React.FC = () => {
             <span className="font-bold text-amber-700 dark:text-amber-500">KARONGO</span>
             {profile.full_name && (
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                {access.remaining}/{access.total} leçons
+                {access.remaining}/{access.total} leçons | {profile.points_balance} pts
               </span>
             )}
           </div>
@@ -339,7 +386,7 @@ const App: React.FC = () => {
             setIsLimitModalOpen(false);
             setIsFeedbackModalOpen(true);
         }}
-        isBonusUnlocked={access.total > 3}
+        isBonusUnlocked={profile.points_balance > 0}
       />
 
       {/* Feedback Modal */}
