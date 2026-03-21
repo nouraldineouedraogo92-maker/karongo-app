@@ -11,7 +11,6 @@ import { FeedbackModal } from './components/FeedbackModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { LandingPage } from './components/Auth/LandingPage';
 import { ProfileModal } from './components/Auth/ProfileModal';
-import { AuthDebugger } from './components/AuthDebugger';
 import { Menu, Ticket, LogOut } from 'lucide-react';
 import { checkAccess, getProfile, syncProfileWithSupabase } from './services/usageService';
 
@@ -285,7 +284,6 @@ const App: React.FC = () => {
   if (!session) {
     return (
       <>
-        <AuthDebugger />
         <LandingPage onLoginSuccess={() => {}} />
       </>
     );
@@ -299,7 +297,6 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors ${themeClass}`}>
-      <AuthDebugger />
       <ProfileModal 
         isOpen={!isProfileComplete} 
         userId={session.user.id} 
