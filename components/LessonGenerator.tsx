@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Subject, GenerationRequest, DifficultyLevel } from '../types';
-import { DEFAULT_SUBJECT, DEFAULT_DIFFICULTY, SAMPLE_PROMPTS, SUBJECT_GROUPS } from '../constants';
+import { DEFAULT_SUBJECT, DEFAULT_DIFFICULTY, SAMPLE_PROMPTS_CM1, SAMPLE_PROMPTS_CM2, SUBJECT_GROUPS } from '../constants';
 import { Button } from './Button';
 import { Sparkles, ArrowRight, BarChart, ChevronDown, ChevronRight, Lock, Unlock, Star, Gift, CheckCircle2 } from 'lucide-react';
 import { checkAccess, getProfile } from '../services/usageService';
@@ -23,6 +23,12 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
   const [profile, setProfile] = useState(getProfile());
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [showUnlockAnimation, setShowUnlockAnimation] = useState(false);
+
+  useEffect(() => {
+    if (activeGradeLevel === 'CM2' && subject === Subject.LECTURE) {
+      setSubject(DEFAULT_SUBJECT);
+    }
+  }, [activeGradeLevel, subject]);
 
   useEffect(() => {
     const updateState = () => {
@@ -168,6 +174,9 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
             </label>
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
               {Object.entries(SUBJECT_GROUPS).map(([groupName, subjects]) => {
+                const filteredSubjects = subjects.filter(s => isCM1 || s !== Subject.LECTURE);
+                if (filteredSubjects.length === 0) return null;
+                
                 const isExpanded = expandedGroups[groupName];
                 return (
                   <div key={groupName} className="border rounded-lg border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -182,7 +191,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
                     
                     {isExpanded && (
                       <div className="p-2 space-y-1 bg-white dark:bg-gray-800">
-                        {subjects.map((s) => (
+                        {filteredSubjects.map((s) => (
                           <button
                             key={s}
                             type="button"
@@ -276,7 +285,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
       <div className="mt-8">
         <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-3">Suggestions rapides</p>
         <div className="flex flex-wrap gap-2">
-          {SAMPLE_PROMPTS.map((sample, idx) => (
+          {(isCM1 ? SAMPLE_PROMPTS_CM1 : SAMPLE_PROMPTS_CM2).map((sample, idx) => (
             <button
               key={idx}
               onClick={() => fillSample(sample)}
