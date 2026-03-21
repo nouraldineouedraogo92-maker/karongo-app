@@ -61,7 +61,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
               fullInstruction = `SUPPRESSION : ${editInstruction}`;
           }
 
-          const newContent = await modifyLesson(content, fullInstruction);
+          const newContent = await modifyLesson(content, fullInstruction, lesson.gradeLevel || 'CM2');
           setPreviewContent(newContent);
           setEditMode('idle');
       } catch (error) {
@@ -526,6 +526,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
                 history={lesson.chatHistory || []} 
                 onUpdateHistory={handleUpdateHistory}
                 onClose={() => setIsChatOpen(false)}
+                gradeLevel={lesson.gradeLevel || 'CM2'}
             />
         </div>
       </div>
@@ -538,6 +539,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
                 history={lesson.chatHistory || []} 
                 onUpdateHistory={handleUpdateHistory}
                 onClose={() => setIsChatOpen(false)}
+                gradeLevel={lesson.gradeLevel || 'CM2'}
             />
         </div>
       )}

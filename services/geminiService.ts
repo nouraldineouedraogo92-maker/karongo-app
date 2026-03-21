@@ -1,13 +1,13 @@
 import { GoogleGenAI, Content } from "@google/genai";
 import { GenerationRequest, Subject, ChatMessage } from "../types";
-import { OFFICIAL_CURRICULUM } from "../curriculum";
+import { getCurriculum } from "../curriculum";
 
 // Configuration des tentatives de reconnexion pour réseau instable
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 2000; // 2 secondes
 
-const SYSTEM_INSTRUCTION = `
-Identité : Tu es "KARONGO", le rédacteur officiel de fiches pédagogiques pour les enseignants de CM2 au Burkina Faso.
+const getSystemInstruction = (gradeLevel: 'CM1' | 'CM2') => `
+Identité : Tu es "KARONGO", le rédacteur officiel de fiches pédagogiques pour les enseignants de ${gradeLevel} au Burkina Faso.
 
 RÈGLE ABSOLUE : Tu dois respecter À LA LETTRE la structure du modèle ci-dessous. Ne change pas les titres des sections. Utilise le format Markdown.
 
@@ -17,7 +17,7 @@ STRUCTURE OBLIGATOIRE DE LA RÉPONSE :
 
 **Discipline** : [Matière]
 
-**Niveau** : CM2
+**Niveau** : ${gradeLevel}
 
 **Durée** : 60 minutes
 
@@ -66,10 +66,10 @@ STYLE & FORMAT :
 - Reste concis et professionnel.
 
 **BASE DE CONNAISSANCES OFFICIELLE :**
-${OFFICIAL_CURRICULUM}
+${getCurriculum(gradeLevel)}
 `;
 
-const CHAT_SYSTEM_INSTRUCTION = `
+const getChatSystemInstruction = (gradeLevel: 'CM1' | 'CM2') => `
 Tu es KARONGO, l'assistant des enseignants.
 Ton rôle est STRICTEMENT limité à répondre aux questions concernant la leçon en cours.
 
@@ -80,10 +80,10 @@ Utilise le contexte officiel suivant et le contenu de la leçon actuelle pour r�
 Sois concis, précis et pédagogique.
 
 CONTEXTE OFFICIEL :
-${OFFICIAL_CURRICULUM}
+${getCurriculum(gradeLevel)}
 `;
 
-const MODIFICATION_SYSTEM_INSTRUCTION = `
+const getModificationSystemInstruction = (gradeLevel: 'CM1' | 'CM2') => `
 Tu es un éditeur expert de contenu pédagogique.
 On te fournit une leçon existante et une instruction de modification.
 Ta tâche est de réécrire la leçon pour intégrer la modification demandée de la manière la plus naturelle possible.
@@ -101,7 +101,7 @@ TA MISSION :
 Renvoie TOUTE la leçon mise à jour, propre et prête à être utilisée en classe.
 
 CONTEXTE OFFICIEL :
-${OFFICIAL_CURRICULUM}
+${getCurriculum(gradeLevel)}
 `;
 
 /**
@@ -134,10 +134,11 @@ export const generateLesson = async (request: GenerationRequest): Promise<string
   const ai = new GoogleGenAI({ apiKey });
 
   // Construction du prompt utilisateur
+  const gradeLevel = request.gradeLevel || 'CM2';
   let promptContext = `
   Sujet : ${request.topic}
   Matière : ${request.subject}
-  Niveau : CM2 (Burkina Faso)
+  Niveau : ${gradeLevel} (Burkina Faso)
   Difficulté : ${request.difficulty}
   Contexte enseignant : ${request.additionalContext || "Aucun"}
   `;
@@ -151,7 +152,7 @@ export const generateLesson = async (request: GenerationRequest): Promise<string
       model: "gemini-3-flash-preview",
       contents: promptContext,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+        systemInstruction: getSystemInstruction(gradeLevel),
         temperature: 0.3,
       },
     });
@@ -180,7 +181,7 @@ export const generateLesson = async (request: GenerationRequest): Promise<string
   }
 };
 
-export const modifyLesson = async (currentContent: string, instruction: string): Promise<string> => {
+export const modifyLesson = async (currentContent: string, instruction: string, gradeLevel: 'CM1' | 'CM2' = 'CM2'): Promise<string> => {
     const apiKey = process.env.API_KEY;
     if (!apiKey) throw new Error("Clé API manquante.");
 
@@ -199,7 +200,7 @@ export const modifyLesson = async (currentContent: string, instruction: string):
             model: "gemini-3-flash-preview",
             contents: prompt,
             config: {
-                systemInstruction: MODIFICATION_SYSTEM_INSTRUCTION,
+                systemInstruction: getModificationSystemInstruction(gradeLevel),
                 temperature: 0.1,
             }
         });
@@ -214,7 +215,7 @@ export const modifyLesson = async (currentContent: string, instruction: string):
     }
 };
 
-export const getChatResponse = async (history: ChatMessage[], newMessage: string, lessonContext: string): Promise<string> => {
+export const getChatResponse = async (history: ChatMessage[], newMessage: string, lessonContext: string, gradeLevel: 'CM1' | 'CM2' = 'CM2'): Promise<string> => {
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
       throw new Error("Clé API manquante.");
@@ -227,7 +228,7 @@ export const getChatResponse = async (history: ChatMessage[], newMessage: string
         parts: [{ text: msg.text }]
     }));
 
-    const contextInstruction = `${CHAT_SYSTEM_INSTRUCTION}\n\nCONTENU DE LA LEÇON ACTUELLE (Le contexte de référence) :\n${lessonContext}`;
+    const contextInstruction = `${getChatSystemInstruction(gradeLevel)}\n\nCONTENU DE LA LEÇON ACTUELLE (Le contexte de référence) :\n${lessonContext}`;
 
     const operation = async () => {
         const chat = ai.chats.create({

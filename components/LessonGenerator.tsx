@@ -9,9 +9,10 @@ import { FeedbackModal } from './FeedbackModal';
 interface LessonGeneratorProps {
   onGenerate: (req: GenerationRequest) => void;
   isLoading: boolean;
+  activeGradeLevel: 'CM1' | 'CM2';
 }
 
-export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, isLoading }) => {
+export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, isLoading, activeGradeLevel }) => {
   const [topic, setTopic] = useState('');
   const [subject, setSubject] = useState<Subject>(DEFAULT_SUBJECT);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(DEFAULT_DIFFICULTY);
@@ -71,6 +72,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
   };
 
   const progress = Math.min(100, (profile.feedbackPoints / 5) * 100);
+  const isCM1 = activeGradeLevel === 'CM1';
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 relative">
@@ -78,11 +80,11 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
       {/* Unlock Animation Overlay */}
       {showUnlockAnimation && (
           <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-              <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl border-4 border-amber-500 animate-in zoom-in-50 fade-in duration-500 text-center">
-                  <div className="mx-auto w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
+              <div className={`bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl border-4 ${isCM1 ? 'border-teal-500' : 'border-amber-500'} animate-in zoom-in-50 fade-in duration-500 text-center`}>
+                  <div className={`mx-auto w-20 h-20 ${isCM1 ? 'bg-teal-100 text-teal-600' : 'bg-amber-100 text-amber-600'} rounded-full flex items-center justify-center mb-4 animate-bounce`}>
                       <Gift size={40} />
                   </div>
-                  <h2 className="text-3xl font-bold text-amber-600 mb-2">Félicitations !</h2>
+                  <h2 className={`text-3xl font-bold ${isCM1 ? 'text-teal-600' : 'text-amber-600'} mb-2`}>Félicitations !</h2>
                   <p className="text-gray-700 dark:text-gray-300 text-lg">
                       Vous avez débloqué <span className="font-bold">+2 leçons</span> supplémentaires !
                   </p>
@@ -99,14 +101,14 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 font-serif">Préparer une leçon</h2>
         <p className="text-gray-600 dark:text-gray-300">
-          Entrez le sujet de votre leçon de CM2. KARONGO générera une fiche complète avec des exemples du Burkina Faso.
+          Entrez le sujet de votre leçon de {activeGradeLevel}. KARONGO générera une fiche complète avec des exemples du Burkina Faso.
         </p>
       </div>
 
       {/* Quota Dashboard */}
       <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-8 relative overflow-hidden">
         {profile.bonusUnlocked && (
-            <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">
+            <div className={`absolute top-0 right-0 ${isCM1 ? 'bg-teal-500' : 'bg-amber-500'} text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg`}>
                 BONUS ACTIF
             </div>
         )}
@@ -132,8 +134,8 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
             <div className="mt-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
-                        <Star size={14} className="text-amber-500 fill-amber-500"/>
-                        Points Feedback: <span className="text-amber-600 dark:text-amber-400">{profile.feedbackPoints}/5</span>
+                        <Star size={14} className={`${isCM1 ? 'text-teal-500 fill-teal-500' : 'text-amber-500 fill-amber-500'}`}/>
+                        Points Feedback: <span className={`${isCM1 ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}`}>{profile.feedbackPoints}/5</span>
                     </span>
                     <button onClick={() => setIsFeedbackOpen(true)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium flex items-center gap-1">
                         Comment gagner des points ? <ChevronRight size={12} />
@@ -141,7 +143,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
                 </div>
                 <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div 
-                        className="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                        className={`h-full ${isCM1 ? 'bg-gradient-to-r from-teal-400 to-emerald-500 shadow-[0_0_10px_rgba(20,184,166,0.5)]' : 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]'} transition-all duration-500 ease-out`}
                         style={{ width: `${progress}%` }}
                     ></div>
                 </div>
@@ -188,12 +190,12 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
                             className={`
                               w-full py-2 px-3 text-sm font-medium rounded-md text-left transition-all flex items-center justify-between
                               ${subject === s 
-                                ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-400 ring-1 ring-amber-500' 
+                                ? (isCM1 ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-900 dark:text-teal-400 ring-1 ring-teal-500' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-400 ring-1 ring-amber-500') 
                                 : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}
                             `}
                           >
                             {s}
-                            {subject === s && <div className="w-2 h-2 rounded-full bg-amber-500"></div>}
+                            {subject === s && <div className={`w-2 h-2 rounded-full ${isCM1 ? 'bg-teal-500' : 'bg-amber-500'}`}></div>}
                           </button>
                         ))}
                       </div>
@@ -243,7 +245,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="Ex: Le périmètre du carré, La règle de trois..."
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-shadow outline-none"
+            className={`w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 ${isCM1 ? 'focus:ring-teal-500 focus:border-teal-500' : 'focus:ring-amber-500 focus:border-amber-500'} transition-shadow outline-none`}
           />
         </div>
 
@@ -257,14 +259,14 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
             value={context}
             onChange={(e) => setContext(e.target.value)}
             placeholder="Ex: Insister sur les conversions, utiliser le contexte du marché..."
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-shadow outline-none resize-none"
+            className={`w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 ${isCM1 ? 'focus:ring-teal-500 focus:border-teal-500' : 'focus:ring-amber-500 focus:border-amber-500'} transition-shadow outline-none resize-none`}
           />
         </div>
 
         <Button 
           type="submit" 
           isLoading={isLoading} 
-          className="w-full py-4 text-lg bg-gray-900 hover:bg-black dark:bg-amber-600 dark:hover:bg-amber-700"
+          className={`w-full py-4 text-lg bg-gray-900 hover:bg-black ${isCM1 ? 'dark:bg-teal-600 dark:hover:bg-teal-700' : 'dark:bg-amber-600 dark:hover:bg-amber-700'}`}
           icon={<Sparkles size={20} />}
         >
           {isLoading ? 'Génération en cours...' : 'Générer la leçon'}

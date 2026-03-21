@@ -10,7 +10,8 @@ export enum Subject {
   ORTHOGRAPHY = "Orthographe",
   HISTORY = "Histoire",
   GEOGRAPHY = "Géographie",
-  SVT = "Sciences de la Vie et de la Terre"
+  SVT = "Sciences de la Vie et de la Terre",
+  LECTURE = "Lecture"
 }
 
 export enum DifficultyLevel {
@@ -33,6 +34,7 @@ export interface Lesson {
   content: string; // Markdown content
   chatHistory: ChatMessage[]; // New: Store chat history with the lesson
   createdAt: number;
+  gradeLevel?: 'CM1' | 'CM2';
 }
 
 export interface GenerationRequest {
@@ -41,6 +43,7 @@ export interface GenerationRequest {
   difficulty: DifficultyLevel;
   additionalContext?: string;
   force?: boolean; // New parameter to force generation despite mismatch
+  gradeLevel?: 'CM1' | 'CM2';
 }
 
 export interface LoadingState {

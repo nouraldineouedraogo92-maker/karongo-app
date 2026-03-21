@@ -18,6 +18,7 @@ export const SUBJECT_GROUPS: Record<string, Subject[]> = {
     Subject.METRIC_SYSTEM
   ],
   "Français": [
+    Subject.LECTURE,
     Subject.CONJUGATION, 
     Subject.GRAMMAR,
     Subject.VOCABULARY_USUEL,

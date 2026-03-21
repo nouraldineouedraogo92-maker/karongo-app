@@ -11,9 +11,10 @@ interface ChatInterfaceProps {
   history: ChatMessage[];
   onUpdateHistory: (newHistory: ChatMessage[]) => void;
   onClose: () => void;
+  gradeLevel?: 'CM1' | 'CM2';
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ lessonContent, history, onUpdateHistory, onClose }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ lessonContent, history, onUpdateHistory, onClose, gradeLevel = 'CM2' }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -36,7 +37,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ lessonContent, his
     setIsLoading(true);
 
     try {
-      const responseText = await getChatResponse(history, input, lessonContent);
+      const responseText = await getChatResponse(history, input, lessonContent, gradeLevel);
       const botMsg: ChatMessage = { role: 'model', text: responseText, timestamp: Date.now() };
       onUpdateHistory([...newHistory, botMsg]);
     } catch (error) {
@@ -64,7 +65,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ lessonContent, his
           </div>
           <div>
             <h3 className="font-bold text-gray-900 dark:text-white text-sm">Assistant Karongo</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Expertise CM2 • Officiel</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Expertise {gradeLevel} • Officiel</p>
           </div>
         </div>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">

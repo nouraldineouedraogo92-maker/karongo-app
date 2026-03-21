@@ -69,7 +69,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLoginSuccess }) => {
           Bienvenue sur Karongo
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          Votre assistant IA pour les enseignants de CM2
+          Votre assistant IA pour les enseignants du Primaire
         </p>
       </div>
 

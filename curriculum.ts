@@ -1,6 +1,6 @@
 
-export const OFFICIAL_CURRICULUM = `
-CONTEXTE PÉDAGOGIQUE OFFICIEL (BURKINA FASO - CM2 - ÉDITION 2020) :
+export const getCurriculum = (gradeLevel: 'CM1' | 'CM2') => `
+CONTEXTE PÉDAGOGIQUE OFFICIEL (BURKINA FASO - ${gradeLevel} - ÉDITION 2020) :
 
 STRUCTURE D'UNE FICHE PÉDAGOGIQUE OFFICIELLE :
 1.  **Titre & Thème** : Doit correspondre exactement aux programmes.
@@ -16,6 +16,11 @@ STRUCTURE D'UNE FICHE PÉDAGOGIQUE OFFICIELLE :
 
 CONTENUS SPÉCIFIQUES EXTRAITS DES ANNALES ET FICHES :
 
+${gradeLevel === 'CM1' ? `**LECTURE :**
+*   *Lecture silencieuse* : Compréhension générale du texte, repérage d'informations.
+*   *Lecture à haute voix* : Fluidité, respect de la ponctuation, intonation, articulation.
+*   *Exploitation de texte* : Explication de mots difficiles, questions de compréhension, dégager l'idée générale.
+` : ''}
 **ARITHMÉTIQUE :**
 *   *Nombres* : Classes de mille, millions, milliards.
 *   *Opérations* : Multiplication (zéro intercalaire), Division (cas particuliers, nombres décimaux), Preuve par 9.
