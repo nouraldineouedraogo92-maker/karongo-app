@@ -11,6 +11,7 @@ import { FeedbackModal } from './components/FeedbackModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { LandingPage } from './components/Auth/LandingPage';
 import { ProfileModal } from './components/Auth/ProfileModal';
+import { InstallPrompt } from './components/InstallPrompt';
 import { Menu, Ticket, LogOut } from 'lucide-react';
 import { checkAccess, getProfile, syncProfileWithSupabase } from './services/usageService';
 
@@ -297,6 +298,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors ${themeClass}`}>
+      <InstallPrompt />
       <ProfileModal 
         isOpen={!isProfileComplete} 
         userId={session.user.id} 
