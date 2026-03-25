@@ -332,7 +332,7 @@ const App: React.FC = () => {
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Desktop Header / Status Bar */}
-        <div className="hidden lg:flex bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 items-center justify-between shadow-sm z-10">
+        <div className="hidden lg:flex bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 items-center justify-between shadow-sm z-50">
           <div className="flex items-center space-x-4">
             <span className={`font-bold text-xl ${activeGradeLevel === 'CM1' ? 'text-teal-700 dark:text-teal-500' : 'text-amber-700 dark:text-amber-500'}`}>KARONGO</span>
             
