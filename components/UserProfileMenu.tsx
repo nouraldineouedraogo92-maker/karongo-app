@@ -53,7 +53,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   const themeBg = activeGradeLevel === 'CM1' ? 'bg-teal-600' : 'bg-amber-600';
 
   return (
-    <div className="flex items-center space-x-3" ref={menuRef}>
+    <div className="relative flex items-center space-x-3" ref={menuRef}>
       {/* Badges (Desktop only) */}
       <div className="hidden md:flex items-center space-x-2">
         <div className="flex items-center px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30">
