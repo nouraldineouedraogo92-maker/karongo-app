@@ -130,7 +130,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
               </div>
             </div>
 
-            <div className="max-h-[60vh] md:max-h-[calc(100vh-100px)] overflow-y-auto pb-safe relative z-10 bg-white dark:bg-gray-800 md:rounded-b-2xl">
+            <div className="max-h-[60vh] md:max-h-[70vh] overflow-y-auto pb-safe relative z-10 bg-white dark:bg-gray-800 md:rounded-b-2xl">
               {/* MON COMPTE */}
               <div className="py-2">
                 <div className="px-4 py-1 text-[10px] font-bold text-gray-500 dark:text-slate-400 tracking-wider uppercase">Mon compte</div>

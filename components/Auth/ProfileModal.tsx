@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { Button } from '../Button';
-import { User, School, BookOpen, X } from 'lucide-react';
+import { User, School, BookOpen, X, Camera } from 'lucide-react';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -15,8 +15,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
   const [fullName, setFullName] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [gradeLevel, setGradeLevel] = useState('CM2');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen && isEditing) {
@@ -28,10 +30,62 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
           setSchoolName(data.school_name || '');
           setGradeLevel(data.grade_level || 'CM2');
         }
+        
+        // Get avatar from auth session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.user_metadata?.avatar_url) {
+          setAvatarUrl(session.user.user_metadata.avatar_url);
+        }
       };
       fetchProfile();
     }
   }, [isOpen, isEditing, userId]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 5MB before resize)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("L'image est trop grande (max 5MB).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 200;
+        const MAX_HEIGHT = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Compress to JPEG with 0.7 quality
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setAvatarUrl(dataUrl);
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   if (!isOpen) return null;
 
@@ -62,6 +116,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
         .upsert(updateData);
 
       if (error) throw error;
+
+      // Update user metadata with avatar
+      if (avatarUrl) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.user_metadata?.avatar_url !== avatarUrl) {
+          await supabase.auth.updateUser({
+            data: { avatar_url: avatarUrl }
+          });
+        }
+      }
+
       onComplete();
     } catch (err: any) {
       setError(err.message);
@@ -84,8 +149,27 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
         )}
 
         <div className="text-center mb-6">
-          <div className="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
-            <User size={32} className="text-amber-600 dark:text-amber-500" />
+          <div className="relative inline-block mb-4">
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="mx-auto w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center cursor-pointer overflow-hidden border-2 border-transparent hover:border-amber-500 transition-colors group"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User size={40} className="text-amber-600 dark:text-amber-500" />
+              )}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera size={24} className="text-white" />
+              </div>
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              accept="image/*" 
+              className="hidden" 
+            />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white font-serif">
             {isEditing ? 'Modifier votre profil' : 'Complétez votre profil'}
