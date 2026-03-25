@@ -12,6 +12,7 @@ import { OnboardingModal } from './components/OnboardingModal';
 import { LandingPage } from './components/Auth/LandingPage';
 import { ProfileModal } from './components/Auth/ProfileModal';
 import { InstallPrompt } from './components/InstallPrompt';
+import { UserProfileMenu } from './components/UserProfileMenu';
 import { Menu, Ticket, LogOut } from 'lucide-react';
 import { checkAccess, getProfile, syncProfileWithSupabase } from './services/usageService';
 
@@ -36,6 +37,7 @@ const App: React.FC = () => {
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Usage State
   const [access, setAccess] = useState(checkAccess());
@@ -276,7 +278,7 @@ const App: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
         <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -297,12 +299,17 @@ const App: React.FC = () => {
   const themeClass = activeGradeLevel === 'CM1' ? 'theme-cm1' : 'theme-cm2';
 
   return (
-    <div className={`flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors ${themeClass}`}>
+    <div className={`flex h-screen bg-gray-50 dark:bg-slate-900 overflow-hidden transition-colors ${themeClass}`}>
       <InstallPrompt />
       <ProfileModal 
-        isOpen={!isProfileComplete} 
+        isOpen={!isProfileComplete || isProfileModalOpen} 
         userId={session.user.id} 
-        onComplete={() => checkProfileCompletion(session)} 
+        onComplete={() => {
+          checkProfileCompletion(session);
+          setIsProfileModalOpen(false);
+        }}
+        onClose={() => setIsProfileModalOpen(false)}
+        isEditing={isProfileModalOpen}
       />
       
       <Sidebar 
@@ -325,7 +332,7 @@ const App: React.FC = () => {
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Desktop Header / Status Bar */}
-        <div className="hidden lg:flex bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 items-center justify-between shadow-sm z-10">
+        <div className="hidden lg:flex bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 items-center justify-between shadow-sm z-10">
           <div className="flex items-center space-x-4">
             <span className={`font-bold text-xl ${activeGradeLevel === 'CM1' ? 'text-teal-700 dark:text-teal-500' : 'text-amber-700 dark:text-amber-500'}`}>KARONGO</span>
             
@@ -336,41 +343,40 @@ const App: React.FC = () => {
               />
               <button
                 onClick={() => setActiveGradeLevel('CM1')}
-                className={`flex-1 py-1 text-xs font-bold z-10 transition-colors ${activeGradeLevel === 'CM1' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                className={`flex-1 py-1 text-xs font-bold z-10 transition-colors ${activeGradeLevel === 'CM1' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-200'}`}
               >
                 CM1
               </button>
               <button
                 onClick={() => setActiveGradeLevel('CM2')}
-                className={`flex-1 py-1 text-xs font-bold z-10 transition-colors ${activeGradeLevel === 'CM2' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                className={`flex-1 py-1 text-xs font-bold z-10 transition-colors ${activeGradeLevel === 'CM2' ? 'text-white' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-200'}`}
               >
                 CM2
               </button>
             </div>
-
-            {profile.full_name && (
-              <span className="text-gray-600 dark:text-gray-300 font-medium">
-                Bonjour {profile.full_name} | Quota: {access.remaining}/{access.total} | Points: {profile.points_balance}
-              </span>
-            )}
           </div>
-          <button 
-            onClick={handleLogout}
-            className="flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <LogOut size={16} className="mr-2" />
-            Déconnexion
-          </button>
+          
+          <UserProfileMenu 
+            session={session}
+            profile={profile}
+            access={access}
+            activeGradeLevel={activeGradeLevel}
+            totalLessons={filteredLessons.length}
+            onLogout={handleLogout}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+            onOpenSubscription={() => setIsSubscriptionOpen(true)}
+            onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+          />
         </div>
 
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-3 flex items-center justify-between shadow-sm z-10">
+        <div className="lg:hidden bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-3 flex items-center justify-between shadow-sm z-10">
           <button onClick={() => setSidebarOpen(true)} className="text-gray-700 dark:text-gray-300">
             <Menu size={24} />
           </button>
           
           <div className="flex flex-col items-center">
-            <div className="flex items-center space-x-2 mb-1">
+            <div className="flex items-center space-x-2">
               <span className={`font-bold text-sm ${activeGradeLevel === 'CM1' ? 'text-teal-700 dark:text-teal-500' : 'text-amber-700 dark:text-amber-500'}`}>KARONGO</span>
               
               {/* Grade Level Switch Mobile */}
@@ -380,38 +386,34 @@ const App: React.FC = () => {
                 />
                 <button
                   onClick={() => setActiveGradeLevel('CM1')}
-                  className={`flex-1 py-0.5 text-[10px] font-bold z-10 transition-colors ${activeGradeLevel === 'CM1' ? 'text-white' : 'text-gray-500'}`}
+                  className={`flex-1 py-0.5 text-[10px] font-bold z-10 transition-colors ${activeGradeLevel === 'CM1' ? 'text-white' : 'text-gray-500 dark:text-slate-400'}`}
                 >
                   CM1
                 </button>
                 <button
                   onClick={() => setActiveGradeLevel('CM2')}
-                  className={`flex-1 py-0.5 text-[10px] font-bold z-10 transition-colors ${activeGradeLevel === 'CM2' ? 'text-white' : 'text-gray-500'}`}
+                  className={`flex-1 py-0.5 text-[10px] font-bold z-10 transition-colors ${activeGradeLevel === 'CM2' ? 'text-white' : 'text-gray-500 dark:text-slate-400'}`}
                 >
                   CM2
                 </button>
               </div>
             </div>
-
-            {profile.full_name && (
-              <span className="text-[10px] text-gray-500 dark:text-gray-400">
-                {access.remaining}/{access.total} leçons | {profile.points_balance} pts
-              </span>
-            )}
           </div>
           
-          {/* Mobile Token Counter */}
-          <div className="flex items-center space-x-2">
-             <div className={`flex items-center px-2 py-1 rounded-full border ${activeGradeLevel === 'CM1' ? 'bg-teal-50 dark:bg-teal-900/30 border-teal-100 dark:border-teal-800' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-100 dark:border-amber-800'}`}>
-                <Ticket size={12} className={`${activeGradeLevel === 'CM1' ? 'text-teal-600 dark:text-teal-500' : 'text-amber-600 dark:text-amber-500'} mr-1`} />
-                <span className={`text-[10px] font-bold ${access.remaining === 0 ? 'text-red-500' : (activeGradeLevel === 'CM1' ? 'text-teal-800 dark:text-teal-400' : 'text-amber-800 dark:text-amber-400')}`}>
-                    {access.remaining}
-                </span>
-             </div>
-          </div>
+          <UserProfileMenu 
+            session={session}
+            profile={profile}
+            access={access}
+            activeGradeLevel={activeGradeLevel}
+            totalLessons={filteredLessons.length}
+            onLogout={handleLogout}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+            onOpenSubscription={() => setIsSubscriptionOpen(true)}
+            onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+          />
         </div>
         
-        <main className="flex-1 overflow-hidden bg-gray-50/50 dark:bg-gray-900/50 relative">
+        <main className="flex-1 overflow-hidden bg-gray-50/50 dark:bg-slate-900/50 relative">
           {currentLesson ? (
             <LessonView 
                 lesson={currentLesson} 
