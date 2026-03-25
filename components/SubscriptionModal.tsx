@@ -36,13 +36,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
         <div className="p-8">
             <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white font-serif mb-2">Karongo Premium</h2>
-                <p className="text-gray-500 dark:text-gray-400">Débloquez la puissance pédagogique illimitée.</p>
+                <p className="text-gray-500 dark:text-slate-400">Débloquez la puissance pédagogique illimitée.</p>
             </div>
 
             {/* Pricing */}
             <div className="flex justify-center items-baseline mb-8">
                 <span className="text-4xl font-extrabold text-gray-900 dark:text-white">2.000</span>
-                <span className="text-xl text-gray-500 dark:text-gray-400 ml-2">FCFA / mois</span>
+                <span className="text-xl text-gray-500 dark:text-slate-400 ml-2">FCFA / mois</span>
             </div>
 
             {/* Features */}
@@ -64,7 +64,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
 
             {/* Payment Buttons Placeholder */}
             <div className="space-y-3">
-                <p className="text-xs text-center text-gray-400 uppercase font-semibold mb-2">Moyens de paiement acceptés</p>
+                <p className="text-xs text-center text-gray-400 dark:text-slate-400 uppercase font-semibold mb-2">Moyens de paiement acceptés</p>
                 <div className="grid grid-cols-2 gap-3">
                     <button 
                         onClick={() => alert("L'intégration Orange Money sera disponible prochainement.")}
@@ -83,7 +83,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ isOpen, on
                 </div>
             </div>
 
-            <p className="mt-6 text-center text-xs text-gray-400 flex items-center justify-center">
+            <p className="mt-6 text-center text-xs text-gray-400 dark:text-slate-400 flex items-center justify-center">
                 <ShieldCheck size={12} className="mr-1" />
                 Paiement sécurisé & crypté
             </p>

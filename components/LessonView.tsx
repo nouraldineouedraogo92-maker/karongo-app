@@ -311,7 +311,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
                         <Edit3 size={20} className="mr-2 text-amber-600" />
                         Assistant de Modification
                     </h3>
-                    <button onClick={resetEditState} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={resetEditState} className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-300">
                         <X size={20} />
                     </button>
                 </div>
@@ -367,7 +367,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
                             </div>
                         )}
                          {editMode === 'idle' && (
-                             <p className="text-sm text-gray-500 italic text-center">Sélectionnez une action ci-dessus pour commencer.</p>
+                             <p className="text-sm text-gray-500 dark:text-slate-400 italic text-center">Sélectionnez une action ci-dessus pour commencer.</p>
                          )}
                     </>
                 ) : (
@@ -400,7 +400,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
                 {previewContent && <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">Prévisualisation</span>}
               </h2>
               <div className="flex gap-2 mt-1">
-                 <span className="text-[10px] md:text-xs text-gray-500 dark:text-gray-400 font-medium px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full">{lesson.subject}</span>
+                 <span className="text-[10px] md:text-xs text-gray-500 dark:text-slate-400 font-medium px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full">{lesson.subject}</span>
               </div>
             </div>
             
@@ -478,7 +478,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
             >
                 <div className="border-b-2 border-black dark:border-gray-500 pb-4 mb-8 flex justify-between items-end opacity-50 dark:opacity-70 print:opacity-100">
                     <span className="font-bold text-sm tracking-widest uppercase dark:text-gray-300">Karongo • CM2</span>
-                    <span className="text-xs dark:text-gray-400">{new Date(lesson.createdAt).toLocaleDateString()}</span>
+                    <span className="text-xs dark:text-slate-400">{new Date(lesson.createdAt).toLocaleDateString()}</span>
                 </div>
 
                 <article className="prose prose-lg prose-gray dark:prose-invert max-w-none prose-p:leading-relaxed prose-li:my-1 print:prose-black bg-transparent">
@@ -503,7 +503,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ lesson, onUpdateLesson }
                     </ReactMarkdown>
                 </article>
                 
-                <div className="mt-12 pt-4 border-t border-gray-300 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400 hidden print:block">
+                <div className="mt-12 pt-4 border-t border-gray-300 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-slate-400 hidden print:block">
                     Généré par KARONGO - Assistant Pédagogique Burkina Faso
                 </div>
             </div>

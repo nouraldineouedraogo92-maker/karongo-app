@@ -40,19 +40,19 @@ export const InstallPrompt: React.FC = () => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-white">Installer Karongo</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Accès rapide & hors-ligne</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">Accès rapide & hors-ligne</p>
           </div>
         </div>
         <button 
           onClick={() => setShowPrompt(false)}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-gray-200"
         >
           <X size={16} />
         </button>
       </div>
       <button
         onClick={handleInstall}
-        className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+        className="mt-3 w-full flex items-center justify-center gap-2 bg-[#1c0a00] hover:bg-[#2d1100] dark:bg-white text-white dark:text-gray-900 py-2 rounded-lg text-sm font-medium dark:hover:bg-gray-100 transition-colors"
       >
         <Download size={16} />
         Installer l'application

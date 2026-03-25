@@ -1,20 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { Button } from '../Button';
-import { User, School, BookOpen } from 'lucide-react';
+import { User, School, BookOpen, X } from 'lucide-react';
 
 interface ProfileModalProps {
   isOpen: boolean;
   onComplete: () => void;
   userId: string;
+  onClose?: () => void;
+  isEditing?: boolean;
 }
 
-export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, userId }) => {
+export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, userId, onClose, isEditing }) => {
   const [fullName, setFullName] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [gradeLevel, setGradeLevel] = useState('CM2');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen && isEditing) {
+      // Fetch existing profile data if editing
+      const fetchProfile = async () => {
+        const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        if (data) {
+          setFullName(data.full_name || '');
+          setSchoolName(data.school_name || '');
+          setGradeLevel(data.grade_level || 'CM2');
+        }
+      };
+      fetchProfile();
+    }
+  }, [isOpen, isEditing, userId]);
 
   if (!isOpen) return null;
 
@@ -26,17 +43,23 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
     setError(null);
 
     try {
+      const updateData: any = {
+        id: userId,
+        full_name: fullName,
+        school_name: schoolName,
+        grade_level: gradeLevel,
+      };
+      
+      // Only set these on initial creation, not on edit
+      if (!isEditing) {
+        updateData.points_balance = 0;
+        updateData.daily_lessons_count = 0;
+        updateData.last_active_date = new Date().toISOString().split('T')[0];
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: userId,
-          full_name: fullName,
-          school_name: schoolName,
-          grade_level: gradeLevel,
-          points_balance: 0,
-          daily_lessons_count: 0,
-          last_active_date: new Date().toISOString().split('T')[0],
-        });
+        .upsert(updateData);
 
       if (error) throw error;
       onComplete();
@@ -51,15 +74,24 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden scale-100 transform transition-all relative p-8">
         
+        {isEditing && onClose && (
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        )}
+
         <div className="text-center mb-6">
           <div className="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
             <User size={32} className="text-amber-600 dark:text-amber-500" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white font-serif">
-            Complétez votre profil
+            {isEditing ? 'Modifier votre profil' : 'Complétez votre profil'}
           </h2>
           <p className="text-gray-600 dark:text-gray-300 mt-2 text-sm">
-            Ces informations nous aident à personnaliser vos leçons.
+            {isEditing ? 'Mettez à jour vos informations personnelles.' : 'Ces informations nous aident à personnaliser vos leçons.'}
           </p>
         </div>
 
@@ -76,7 +108,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-gray-400" />
+                <User className="h-5 w-5 text-gray-400 dark:text-slate-400" />
               </div>
               <input
                 type="text"
@@ -95,7 +127,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <School className="h-5 w-5 text-gray-400" />
+                <School className="h-5 w-5 text-gray-400 dark:text-slate-400" />
               </div>
               <input
                 type="text"
@@ -113,7 +145,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onComplete, 
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <BookOpen className="h-5 w-5 text-gray-400" />
+                <BookOpen className="h-5 w-5 text-gray-400 dark:text-slate-400" />
               </div>
               <select
                 value={gradeLevel}

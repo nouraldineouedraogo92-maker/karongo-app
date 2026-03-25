@@ -65,10 +65,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ lessonContent, his
           </div>
           <div>
             <h3 className="font-bold text-gray-900 dark:text-white text-sm">Assistant Karongo</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Expertise {gradeLevel} • Officiel</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">Expertise {gradeLevel} • Officiel</p>
           </div>
         </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1">
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-gray-200 p-1">
           <X size={20} />
         </button>
       </div>
@@ -76,7 +76,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ lessonContent, his
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
         {history.length === 0 && (
-          <div className="text-center py-8 px-4 text-gray-500 dark:text-gray-400 text-sm">
+          <div className="text-center py-8 px-4 text-gray-500 dark:text-slate-400 text-sm">
             <p className="mb-2">👋 Bonjour !</p>
             <p>Je suis là pour vous aider à comprendre la leçon, trouver des exercices supplémentaires ou clarifier un point du programme.</p>
           </div>

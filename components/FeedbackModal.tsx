@@ -31,8 +31,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, o
       }
   }, [isOpen]);
 
-  const handleQuickFeedback = (rating: 'BAD' | 'AVERAGE' | 'GOOD') => {
-    const { unlocked, limitReached } = addFeedbackPoints('QUICK', { rating });
+  const handleQuickFeedback = async (rating: 'BAD' | 'AVERAGE' | 'GOOD') => {
+    const { unlocked, limitReached } = await addFeedbackPoints('QUICK', { rating });
     
     if (limitReached) {
         return;
@@ -52,9 +52,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, o
     }
   };
 
-  const handleDetailedSubmit = () => {
+  const handleDetailedSubmit = async () => {
     if (detailedText.length < 30) return;
-    const { unlocked } = addFeedbackPoints('DETAILED', { comment: detailedText });
+    const { unlocked } = await addFeedbackPoints('DETAILED', { comment: detailedText });
     if (unlocked) {
       onUnlock();
       onClose();
@@ -68,9 +68,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, o
     }
   };
 
-  const handleBugSubmit = () => {
+  const handleBugSubmit = async () => {
     if (!bugText || !bugFile) return;
-    const { unlocked } = addFeedbackPoints('BUG_REPORT', { comment: bugText, screenshot: bugFile });
+    const { unlocked } = await addFeedbackPoints('BUG_REPORT', { comment: bugText, screenshot: bugFile });
     if (unlocked) {
       onUnlock();
       onClose();
@@ -152,7 +152,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, o
                     </p>
                 ) : (
                     <>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 pl-12 mb-3">
+                        <p className="text-sm text-gray-500 dark:text-slate-400 pl-12 mb-3">
                             Il vous reste <span className="font-bold text-amber-600">{3 - quickFeedbackCount}</span> feedback(s) rapide(s) aujourd'hui.
                         </p>
                         <div className="flex justify-between gap-2 pl-12">
@@ -223,7 +223,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, o
                       onChange={(e) => setBugText(e.target.value)}
                     />
                     <div className="flex items-center gap-2">
-                      <label className="flex-1 cursor-pointer bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 flex items-center justify-center gap-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
+                      <label className="flex-1 cursor-pointer bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-2 flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         <Upload size={16} />
                         <span className="truncate">{bugFile ? bugFile.name : "Ajouter une capture d'écran"}</span>
                         <input type="file" accept="image/*" className="hidden" onChange={(e) => setBugFile(e.target.files?.[0] || null)} />

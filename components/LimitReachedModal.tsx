@@ -42,7 +42,7 @@ export const LimitReachedModal: React.FC<LimitReachedModalProps> = ({ isOpen, on
                   </p>
                   <button 
                     onClick={onOpenFeedback}
-                    className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors text-sm"
+                    className="w-full py-2 px-4 rounded-lg border bg-[#fef3c7] border-[#f59e0b] text-amber-900 hover:bg-[#fde68a] dark:bg-[#451a03] dark:border-[#b45309] dark:text-[#fcd34d] dark:hover:bg-[#5c2304] font-bold transition-colors text-sm"
                   >
                     Gagner +2 leçons maintenant
                   </button>
@@ -56,7 +56,7 @@ export const LimitReachedModal: React.FC<LimitReachedModalProps> = ({ isOpen, on
 
           <button 
             onClick={onClose}
-            className="mt-8 w-full py-3 px-4 bg-gray-900 hover:bg-black dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium rounded-xl transition-colors"
+            className="mt-8 w-full py-3 px-4 bg-[#1c0a00] hover:bg-[#2d1100] dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-medium rounded-xl transition-colors"
           >
             Compris, à demain !
           </button>

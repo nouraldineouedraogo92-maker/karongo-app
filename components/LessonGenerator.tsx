@@ -122,16 +122,16 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <div>
                 <span className="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-1">
-                    {profile.bonusUnlocked ? <Unlock size={18} className="text-green-500"/> : <Lock size={18} className="text-gray-400"/>}
+                    {profile.bonusUnlocked ? <Unlock size={18} className="text-green-500"/> : <Lock size={18} className="text-gray-400 dark:text-slate-400"/>}
                     Quota Journalier
                 </span>
-                <p className="text-xs text-gray-500">Générations restantes pour aujourd'hui</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Générations restantes pour aujourd'hui</p>
             </div>
             <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 px-4 py-2 rounded-lg border border-gray-100 dark:border-gray-700">
                 <span className={`text-xl font-black ${access.remaining === 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
                     {access.remaining}
                 </span>
-                <span className="text-sm text-gray-400 font-medium">/ {access.total}</span>
+                <span className="text-sm text-gray-400 dark:text-slate-400 font-medium">/ {access.total}</span>
             </div>
         </div>
         
@@ -139,7 +139,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
         {!profile.bonusUnlocked ? (
             <div className="mt-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-gray-600 dark:text-slate-400 flex items-center gap-1.5">
                         <Star size={14} className={`${isCM1 ? 'text-teal-500 fill-teal-500' : 'text-amber-500 fill-amber-500'}`}/>
                         Points Feedback: <span className={`${isCM1 ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}`}>{profile.feedbackPoints}/5</span>
                     </span>
@@ -153,7 +153,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
                         style={{ width: `${progress}%` }}
                     ></div>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+                <p className="text-[10px] text-gray-400 dark:text-slate-400 mt-2 flex items-center gap-1">
                     <Gift size={12} /> Atteignez 5 points pour débloquer <span className="font-bold text-gray-600 dark:text-gray-300">+2 générations</span> aujourd'hui !
                 </p>
             </div>
@@ -183,7 +183,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
                     <button
                       type="button"
                       onClick={() => toggleGroup(groupName)}
-                      className="w-full px-3 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      className="w-full px-3 py-2 text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     >
                       <span>{groupName}</span>
                       {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -275,7 +275,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
         <Button 
           type="submit" 
           isLoading={isLoading} 
-          className={`w-full py-4 text-lg bg-gray-900 hover:bg-black ${isCM1 ? 'dark:bg-teal-600 dark:hover:bg-teal-700' : 'dark:bg-amber-600 dark:hover:bg-amber-700'}`}
+          className={`w-full py-4 text-lg bg-[#1c0a00] hover:bg-[#2d1100] ${isCM1 ? 'dark:bg-teal-600 dark:hover:bg-teal-700' : 'dark:bg-amber-600 dark:hover:bg-amber-700'}`}
           icon={<Sparkles size={20} />}
         >
           {isLoading ? 'Génération en cours...' : 'Générer la leçon'}
@@ -283,7 +283,7 @@ export const LessonGenerator: React.FC<LessonGeneratorProps> = ({ onGenerate, is
       </form>
 
       <div className="mt-8">
-        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-3">Suggestions rapides</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400 uppercase tracking-wide font-semibold mb-3">Suggestions rapides</p>
         <div className="flex flex-wrap gap-2">
           {(isCM1 ? SAMPLE_PROMPTS_CM1 : SAMPLE_PROMPTS_CM2).map((sample, idx) => (
             <button
